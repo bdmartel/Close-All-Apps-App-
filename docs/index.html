@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Close All">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>Close All Apps</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f0f1a;
+  --card:rgba(255,255,255,0.06);
+  --card-border:rgba(255,255,255,0.1);
+  --text:#f0f0f5;
+  --text-secondary:rgba(240,240,245,0.6);
+  --accent-1:#ff4d4d;
+  --accent-2:#ff8c00;
+  --safe-top:env(safe-area-inset-top,20px);
+  --safe-bottom:env(safe-area-inset-bottom,20px);
+}
+html,body{
+  height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overflow-x:hidden;
+}
+body{
+  background:linear-gradient(180deg,#1a1a2e 0%,#0f0f1a 40%,#0a0a14 100%);
+  min-height:100vh;
+  padding-top:var(--safe-top);
+  padding-bottom:var(--safe-bottom);
+}
+
+/* Animated background orbs */
+.bg-orb{
+  position:fixed;pointer-events:none;border-radius:50%;filter:blur(80px);opacity:0.15;z-index:0;
+}
+.bg-orb.a{width:300px;height:300px;background:var(--accent-1);top:-80px;right:-60px;animation:float 8s ease-in-out infinite}
+.bg-orb.b{width:250px;height:250px;background:var(--accent-2);bottom:10%;left:-80px;animation:float 10s ease-in-out infinite reverse}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(30px)}}
+
+.container{
+  max-width:480px;margin:0 auto;padding:20px 20px 40px;position:relative;z-index:1;
+}
+
+/* Header */
+.header{text-align:center;padding:30px 0 10px}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-0.5px}
+.header p{font-size:15px;color:var(--text-secondary);margin-top:6px}
+
+/* Icon area */
+.icon-area{
+  display:flex;justify-content:center;padding:30px 0;
+}
+.icon-wrap{
+  width:120px;height:120px;position:relative;
+}
+.icon-wrap svg{width:100%;height:100%;filter:drop-shadow(0 4px 24px rgba(255,77,77,0.35))}
+.icon-pulse{
+  position:absolute;inset:-12px;border-radius:28px;
+  background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+  opacity:0;animation:pulse 2.5s ease-in-out infinite;z-index:-1;
+}
+@keyframes pulse{0%,100%{opacity:0;transform:scale(0.92)}50%{opacity:0.25;transform:scale(1.05)}}
+
+/* Main CTA button */
+.cta-btn{
+  display:block;width:100%;padding:18px;border:none;border-radius:16px;
+  background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+  color:#fff;font-size:18px;font-weight:700;letter-spacing:-0.3px;
+  cursor:pointer;position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(255,77,77,0.3);
+  transition:transform 0.15s,box-shadow 0.15s;
+}
+.cta-btn:active{transform:scale(0.97);box-shadow:0 2px 12px rgba(255,77,77,0.25)}
+.cta-btn .shimmer{
+  position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  animation:shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer{0%{left:-100%}50%,100%{left:100%}}
+
+/* Cards */
+.card{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:16px;
+  padding:20px;
+  margin-top:16px;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.card h2{font-size:17px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2 .emoji{font-size:20px}
+.card p,.card li{font-size:15px;line-height:1.6;color:var(--text-secondary)}
+.card ul{list-style:none;padding:0}
+.card li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.card li:last-child{border-bottom:none}
+.card li strong{color:var(--text);font-weight:600}
+.step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:8px;font-size:13px;font-weight:700;
+  background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+  color:#fff;margin-right:8px;flex-shrink:0;
+}
+.tip-badge{
+  display:inline-block;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:600;
+  background:rgba(255,140,0,0.15);color:var(--accent-2);margin-bottom:8px;
+}
+
+/* Modal / bottom sheet */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s;
+}
+.overlay.active{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#1c1c2e;
+  border-radius:20px 20px 0 0;
+  max-height:85vh;overflow-y:auto;
+  z-index:101;
+  transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  padding:12px 24px calc(24px + var(--safe-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+.sheet.active{transform:translateY(0)}
+.sheet-handle{
+  width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,0.2);
+  margin:0 auto 20px;
+}
+.sheet h2{font-size:22px;font-weight:700;margin-bottom:16px;text-align:center}
+.method{margin-bottom:24px}
+.method h3{font-size:17px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.method-tag{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  padding:3px 8px;border-radius:6px;
+}
+.method-tag.best{background:rgba(52,199,89,0.15);color:#34c759}
+.method-tag.alt{background:rgba(0,122,255,0.15);color:#007aff}
+.method-tag.accessibility{background:rgba(175,130,255,0.15);color:#af82ff}
+.method ol{padding-left:0;list-style:none;counter-reset:step}
+.method li{
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);
+  font-size:15px;line-height:1.5;color:var(--text-secondary);
+  display:flex;align-items:flex-start;gap:10px;
+}
+.method li:last-child{border-bottom:none}
+.method li .step-num{flex-shrink:0;margin-top:1px}
+.close-sheet{
+  display:block;width:100%;padding:16px;border:none;border-radius:14px;
+  background:rgba(255,255,255,0.08);color:var(--text);font-size:17px;font-weight:600;
+  cursor:pointer;margin-top:12px;transition:background 0.15s;
+}
+.close-sheet:active{background:rgba(255,255,255,0.12)}
+
+/* Footer */
+.footer{text-align:center;padding:30px 0 10px;font-size:13px;color:var(--text-secondary)}
+.footer a{color:var(--accent-2);text-decoration:none}
+
+/* Install banner */
+.install-banner{
+  display:none;
+  background:linear-gradient(135deg,rgba(255,77,77,0.12),rgba(255,140,0,0.12));
+  border:1px solid rgba(255,140,0,0.2);
+  border-radius:14px;padding:16px;margin-top:16px;text-align:center;
+}
+.install-banner.show{display:block}
+.install-banner p{font-size:14px;line-height:1.5;color:var(--text-secondary)}
+.install-banner strong{color:var(--text)}
+.install-icon{font-size:20px;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="bg-orb a"></div>
+<div class="bg-orb b"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>Close All Apps</h1>
+    <p>The fastest way to close every app on your iPhone</p>
+  </div>
+
+  <div class="icon-area">
+    <div class="icon-wrap">
+      <div class="icon-pulse"></div>
+      <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff4d4d"/>
+            <stop offset="100%" stop-color="#ff8c00"/>
+          </linearGradient>
+        </defs>
+        <rect width="120" height="120" rx="28" fill="url(#g1)"/>
+        <line x1="38" y1="38" x2="82" y2="82" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+        <line x1="82" y1="38" x2="38" y2="82" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <button class="cta-btn" id="ctaBtn" aria-label="Show how to close all apps">
+    <span class="shimmer"></span>
+    Close All Apps
+  </button>
+
+  <div id="installBanner" class="install-banner">
+    <div class="install-icon">+</div>
+    <p><strong>Add to Home Screen</strong> for a native app experience.<br>
+    Tap the share button <strong>(&#x2191;)</strong> in Safari, then <strong>"Add to Home Screen"</strong>.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="emoji">&#x2753;</span> How does this work?</h2>
+    <p>iOS does not allow any app to close other apps directly &mdash; it is a core security feature of the operating system. Instead, this app guides you through the <strong>fastest methods</strong> to close all your running apps manually.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="emoji">&#x26A1;</span> Quick Methods</h2>
+    <ul>
+      <li><strong>App Switcher Swipe</strong> &mdash; The standard way. Swipe up on each app card to close it.</li>
+      <li><strong>Multi-finger Swipe</strong> &mdash; Use 2-3 fingers to swipe up multiple cards at once.</li>
+      <li><strong>AssistiveTouch</strong> &mdash; Set up a custom gesture to speed things up.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2><span class="emoji">&#x1F4A1;</span> Tips</h2>
+    <ul>
+      <li>
+        <span class="tip-badge">Battery</span><br>
+        iOS manages background apps efficiently. Closing apps is rarely needed to save battery &mdash; but it can help if an app is misbehaving.
+      </li>
+      <li>
+        <span class="tip-badge">Memory</span><br>
+        The system automatically frees memory when needed. Force-closing is most useful when an app is frozen or glitching.
+      </li>
+      <li>
+        <span class="tip-badge">Privacy</span><br>
+        Closing apps removes them from the App Switcher, which can help keep your activity private when handing your phone to someone.
+      </li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <p>Made for iPhone &middot; Works offline as a PWA</p>
+  </div>
+</div>
+
+<!-- Bottom sheet modal -->
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <h2>How to Close All Apps</h2>
+
+  <div class="method">
+    <h3><span class="method-tag best">Recommended</span> App Switcher</h3>
+    <ol>
+      <li><span class="step-num">1</span><span><strong>Open the App Switcher.</strong> On iPhones with Face ID, swipe up from the bottom and pause in the center. On iPhones with a Home button, double-press the Home button.</span></li>
+      <li><span class="step-num">2</span><span><strong>Swipe apps away.</strong> Swipe each app card upward to close it. You can use <strong>two or three fingers</strong> to swipe multiple apps at the same time.</span></li>
+      <li><span class="step-num">3</span><span><strong>Repeat</strong> until all app cards are gone. That is it &mdash; all apps are closed.</span></li>
+    </ol>
+  </div>
+
+  <div class="method">
+    <h3><span class="method-tag alt">Alternative</span> Multi-finger Technique</h3>
+    <ol>
+      <li><span class="step-num">1</span><span>Open the App Switcher as described above.</span></li>
+      <li><span class="step-num">2</span><span>Place <strong>two or three fingers</strong> on separate app cards at the same time.</span></li>
+      <li><span class="step-num">3</span><span>Swipe all fingers upward simultaneously to close multiple apps in one gesture.</span></li>
+      <li><span class="step-num">4</span><span>Repeat until all apps are dismissed.</span></li>
+    </ol>
+  </div>
+
+  <div class="method">
+    <h3><span class="method-tag accessibility">Accessibility</span> AssistiveTouch</h3>
+    <ol>
+      <li><span class="step-num">1</span><span>Go to <strong>Settings &gt; Accessibility &gt; Touch &gt; AssistiveTouch</strong> and turn it on.</span></li>
+      <li><span class="step-num">2</span><span>Tap <strong>"Create New Gesture"</strong> and record a three-finger upward swipe.</span></li>
+      <li><span class="step-num">3</span><span>Save the gesture with a name like "Close Apps".</span></li>
+      <li><span class="step-num">4</span><span>Open the App Switcher, tap the AssistiveTouch button, choose <strong>Custom</strong>, and select your saved gesture to close multiple apps at once.</span></li>
+    </ol>
+  </div>
+
+  <button class="close-sheet" id="closeSheet">Done</button>
+</div>
+
+<script>
+// Sheet toggle
+const overlay = document.getElementById('overlay');
+const sheet = document.getElementById('sheet');
+const ctaBtn = document.getElementById('ctaBtn');
+const closeSheet = document.getElementById('closeSheet');
+
+function openSheet() {
+  overlay.classList.add('active');
+  sheet.classList.add('active');
+}
+function closeSheetFn() {
+  overlay.classList.remove('active');
+  sheet.classList.remove('active');
+}
+
+ctaBtn.addEventListener('click', openSheet);
+closeSheet.addEventListener('click', closeSheetFn);
+overlay.addEventListener('click', closeSheetFn);
+
+// Swipe down to dismiss sheet
+let touchStartY = 0;
+sheet.addEventListener('touchstart', function(e) {
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+sheet.addEventListener('touchend', function(e) {
+  const delta = e.changedTouches[0].clientY - touchStartY;
+  if (delta > 80) closeSheetFn();
+}, { passive: true });
+
+// Install banner for Safari (non-standalone)
+if (window.navigator.standalone === false) {
+  document.getElementById('installBanner').classList.add('show');
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function() {});
+}
+</script>
+</body>
+</html>
